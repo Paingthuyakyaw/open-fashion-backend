@@ -1,5 +1,8 @@
 import swaggerJsdoc from "swagger-jsdoc";
 
+const PORT = process.env.PORT ?? "3001";
+const baseUrl = `http://localhost:${PORT}`;
+
 const swaggerDefinition = {
   openapi: "3.0.0",
   info: {
@@ -9,7 +12,7 @@ const swaggerDefinition = {
   },
   servers: [
     {
-      url: "http://localhost:3000",
+      url: baseUrl,
       description: "Development server",
     },
   ],
@@ -19,7 +22,7 @@ const swaggerDefinition = {
         tags: ["Upload"],
         summary: "Upload product images (admin only)",
         description:
-          "Upload up to 5 product images. Use returned imageUrls in POST /api/products or PUT /api/products/{id}. Full URL example: http://localhost:3000/uploads/products/3f2a1b4c-shirt.jpg",
+          `Upload up to 5 product images. Use returned imageUrls in POST /api/products or PUT /api/products/{id}. Full URL example: ${baseUrl}/uploads/products/3f2a1b4c-shirt.jpg`,
         security: [{ bearerAuth: [] }],
         requestBody: {
           required: true,
@@ -151,7 +154,7 @@ const swaggerDefinition = {
           id: { type: "string", format: "uuid" },
           url: {
             type: "string",
-            example: "http://localhost:3000/uploads/products/3f2a1b4c-shirt.jpg",
+            example: `${baseUrl}/uploads/products/3f2a1b4c-shirt.jpg`,
           },
         },
       },
@@ -216,7 +219,12 @@ const swaggerDefinition = {
         required: ["name", "description", "price", "categoryId"],
         properties: {
           name: { type: "string", example: "Classic Cotton Tee" },
-          description: { type: "string" },
+          description: {
+            type: "string",
+            example: "Soft cotton t-shirt for everyday wear",
+            description:
+              "Keep on one line in Swagger. For line breaks use \\n — do not press Enter inside quotes.",
+          },
           price: { type: "number", example: 29.99 },
           categoryId: { type: "string", format: "uuid" },
           variants: {
@@ -232,12 +240,24 @@ const swaggerDefinition = {
             },
           },
         },
+        example: {
+          name: "Classic Cotton Tee",
+          description: "Soft cotton t-shirt for everyday wear",
+          price: 29.99,
+          categoryId: "00000000-0000-0000-0000-000000000000",
+          variants: [{ size: "M", color: "Black", price: 29.99 }],
+          imageUrls: ["/uploads/products/3f2a1b4c-shirt.jpg"],
+        },
       },
       UpdateProductRequest: {
         type: "object",
         properties: {
           name: { type: "string" },
-          description: { type: "string" },
+          description: {
+            type: "string",
+            description:
+              "Keep on one line in Swagger. For line breaks use \\n — do not press Enter inside quotes.",
+          },
           price: { type: "number" },
           categoryId: { type: "string", format: "uuid" },
           variants: {
