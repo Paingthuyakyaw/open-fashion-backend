@@ -1,5 +1,7 @@
 import type { Request, Response } from "express";
 import { prisma } from "../lib/prisma";
+import { CreateProductBody, ProductVariantInput } from "../types/product";
+import { getParamId, paginationMeta, parsePagination } from "../utils/controller";
 
 const productInclude = {
   category: { select: { id: true, name: true } },
@@ -9,20 +11,8 @@ const productInclude = {
   productVariants: true,
 } as const;
 
-type ProductVariantInput = {
-  size?: string;
-  color?: string;
-  price?: number;
-};
 
-type CreateProductBody = {
-  name?: string;
-  description?: string;
-  price?: number;
-  categoryId?: string;
-  variants?: ProductVariantInput[];
-  imageUrls?: string[];
-};
+
 
 type UpdateProductBody = CreateProductBody;
 
@@ -71,21 +61,13 @@ function validateVariants(variants: ProductVariantInput[]): string | null {
   return null;
 }
 
-const DEFAULT_PAGE = 1;
-const DEFAULT_LIMIT = 10;
-const MAX_LIMIT = 100;
-
 function parseListQuery(query: Request["query"]) {
   const { categoryId, search } = query as {
     categoryId?: string;
     search?: string;
   };
 
-  const page = Math.max(1, parseInt(String(query.page ?? DEFAULT_PAGE), 10) || DEFAULT_PAGE);
-  const limit = Math.min(
-    MAX_LIMIT,
-    Math.max(1, parseInt(String(query.limit ?? DEFAULT_LIMIT), 10) || DEFAULT_LIMIT),
-  );
+  const { page, limit } = parsePagination(query);
   const trimmedSearch = search?.trim() || undefined;
 
   return { categoryId, search: trimmedSearch, page, limit };
@@ -118,26 +100,12 @@ export async function listProducts(req: Request, res: Response) {
 
   return res.json({
     products: products.map(formatProduct),
-    pagination: {
-      page,
-      limit,
-      total,
-      totalPages: Math.ceil(total / limit) || 0,
-    },
+    pagination: paginationMeta(page, limit, total),
   });
 }
 
-function getParamId(req: Request, res: Response): string | null {
-  const { id } = req.params;
-  if (!id || Array.isArray(id)) {
-    res.status(400).json({ message: "Invalid product ID" });
-    return null;
-  }
-  return id;
-}
-
 export async function getProduct(req: Request, res: Response) {
-  const id = getParamId(req, res);
+  const id = getParamId(req, res, "product");
   if (!id) return;
 
   const product = await prisma.product.findUnique({
@@ -211,7 +179,7 @@ export async function createProduct(req: Request, res: Response) {
 }
 
 export async function updateProduct(req: Request, res: Response) {
-  const id = getParamId(req, res);
+  const id = getParamId(req, res, "product");
   if (!id) return;
 
   const { name, description, price, categoryId, variants, imageUrls } =
@@ -283,7 +251,7 @@ export async function updateProduct(req: Request, res: Response) {
 }
 
 export async function deleteProduct(req: Request, res: Response) {
-  const id = getParamId(req, res);
+  const id = getParamId(req, res, "product");
   if (!id) return;
 
   const existing = await prisma.product.findUnique({
