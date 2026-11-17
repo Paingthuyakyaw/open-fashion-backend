@@ -1,8 +1,9 @@
 import type { NextFunction, Request, Response } from "express";
 import type { Role } from "../generated/prisma/client";
+import { prisma } from "../lib/prisma";
 import { verifyToken } from "../utils/jwt";
 
-export function authenticate(req: Request, res: Response, next: NextFunction) {
+export async function authenticate(req: Request, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;
 
   if (!authHeader?.startsWith("Bearer ")) {
@@ -11,11 +12,31 @@ export function authenticate(req: Request, res: Response, next: NextFunction) {
 
   const token = authHeader.slice(7);
 
+  let userId: string;
   try {
-    req.user = verifyToken(token);
-    next();
+    userId = verifyToken(token).userId;
   } catch {
     return res.status(401).json({ message: "Invalid or expired token" });
+  }
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, email: true, role: true },
+    });
+
+    if (!user) {
+      return res.status(401).json({ message: "Invalid or expired token" });
+    }
+
+    req.user = {
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+    };
+    next();
+  } catch (error) {
+    next(error);
   }
 }
 

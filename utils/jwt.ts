@@ -7,7 +7,17 @@ export type TokenPayload = {
   role: Role;
 };
 
-const JWT_SECRET = process.env.JWT_SECRET ?? "dev-secret-change-me";
+function requireJwtSecret(): string {
+  const secret = process.env.JWT_SECRET?.trim();
+  if (!secret) {
+    throw new Error(
+      "JWT_SECRET is required. Set a long random value in the environment.",
+    );
+  }
+  return secret;
+}
+
+const JWT_SECRET = requireJwtSecret();
 const JWT_EXPIRES_IN = (process.env.JWT_EXPIRES_IN ?? "7d") as SignOptions["expiresIn"];
 
 export function signToken(payload: TokenPayload): string {
