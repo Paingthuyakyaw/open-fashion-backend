@@ -20,6 +20,7 @@ const swaggerDefinition = {
     "/api/upload/images": {
       post: {
         tags: ["Upload"],
+        "x-audience": ["admin"],
         summary: "Upload product images (admin only)",
         description:
           `Upload up to 5 product images. Use returned imageUrls in POST /api/products or PUT /api/products/{id}. Full URL example: ${baseUrl}/uploads/products/3f2a1b4c-shirt.jpg`,
@@ -301,6 +302,7 @@ const swaggerDefinition = {
         properties: {
           id: { type: "string", format: "uuid" },
           productId: { type: "string", format: "uuid" },
+          productName: { type: "string", example: "Classic Cotton Tee" },
           quantity: { type: "integer", example: 2 },
           price: { type: "number", nullable: true, example: 29.99 },
           totalPrice: { type: "number", nullable: true, example: 59.98 },
@@ -313,6 +315,7 @@ const swaggerDefinition = {
         properties: {
           id: { type: "string", format: "uuid" },
           userId: { type: "string", format: "uuid" },
+          userName: { type: "string", example: "demo@openfashion.com" },
           status: {
             type: "string",
             enum: [
@@ -368,6 +371,162 @@ const swaggerDefinition = {
           },
         },
       },
+      Transaction: {
+        type: "object",
+        properties: {
+          id: { type: "string", format: "uuid" },
+          orderId: { type: "string", format: "uuid" },
+          userId: { type: "string", format: "uuid" },
+          amount: { type: "number", example: 59.98 },
+          currency: { type: "string", example: "USD" },
+          status: {
+            type: "string",
+            enum: ["PENDING", "SUCCESS", "FAILED", "REFUNDED"],
+          },
+          method: {
+            type: "string",
+            enum: [
+              "CARD",
+              "CASH",
+              "BANK_TRANSFER",
+              "KBZ_PAY",
+              "WAVE_PAY",
+              "AYA_PAY",
+              "OTHER",
+            ],
+          },
+          reference: { type: "string", nullable: true, example: "KBZ-123456" },
+          createdAt: { type: "string", format: "date-time" },
+          updatedAt: { type: "string", format: "date-time" },
+        },
+      },
+      TransactionListResponse: {
+        type: "object",
+        properties: {
+          transactions: {
+            type: "array",
+            items: { $ref: "#/components/schemas/Transaction" },
+          },
+          pagination: { $ref: "#/components/schemas/PaginationMeta" },
+        },
+      },
+      CreateTransactionRequest: {
+        type: "object",
+        required: ["orderId", "method"],
+        properties: {
+          orderId: { type: "string", format: "uuid" },
+          method: {
+            type: "string",
+            enum: [
+              "CARD",
+              "CASH",
+              "BANK_TRANSFER",
+              "KBZ_PAY",
+              "WAVE_PAY",
+              "AYA_PAY",
+              "OTHER",
+            ],
+          },
+          currency: { type: "string", example: "MMK" },
+          reference: { type: "string", example: "KBZ-123456" },
+        },
+      },
+      UpdateTransactionStatusRequest: {
+        type: "object",
+        required: ["status"],
+        properties: {
+          status: {
+            type: "string",
+            enum: ["PENDING", "SUCCESS", "FAILED", "REFUNDED"],
+          },
+        },
+      },
+      TicketMessage: {
+        type: "object",
+        properties: {
+          id: { type: "string", format: "uuid" },
+          userId: { type: "string", format: "uuid" },
+          body: { type: "string", example: "My order has not arrived." },
+          createdAt: { type: "string", format: "date-time" },
+        },
+      },
+      Ticket: {
+        type: "object",
+        properties: {
+          id: { type: "string", format: "uuid" },
+          userId: { type: "string", format: "uuid" },
+          orderId: { type: "string", format: "uuid", nullable: true },
+          subject: { type: "string", example: "Order not delivered" },
+          category: {
+            type: "string",
+            enum: ["ORDER", "PAYMENT", "PRODUCT", "SHIPPING", "OTHER"],
+          },
+          priority: {
+            type: "string",
+            enum: ["LOW", "MEDIUM", "HIGH"],
+          },
+          status: {
+            type: "string",
+            enum: ["OPEN", "IN_PROGRESS", "WAITING_CUSTOMER", "RESOLVED", "CLOSED"],
+          },
+          messageCount: { type: "integer", example: 1 },
+          messages: {
+            type: "array",
+            items: { $ref: "#/components/schemas/TicketMessage" },
+          },
+          createdAt: { type: "string", format: "date-time" },
+          updatedAt: { type: "string", format: "date-time" },
+        },
+      },
+      TicketListResponse: {
+        type: "object",
+        properties: {
+          tickets: {
+            type: "array",
+            items: { $ref: "#/components/schemas/Ticket" },
+          },
+          pagination: { $ref: "#/components/schemas/PaginationMeta" },
+        },
+      },
+      CreateTicketRequest: {
+        type: "object",
+        required: ["subject", "body"],
+        properties: {
+          subject: { type: "string", example: "Order not delivered" },
+          body: { type: "string", example: "My order has not arrived." },
+          category: {
+            type: "string",
+            enum: ["ORDER", "PAYMENT", "PRODUCT", "SHIPPING", "OTHER"],
+          },
+          priority: {
+            type: "string",
+            enum: ["LOW", "MEDIUM", "HIGH"],
+          },
+          orderId: { type: "string", format: "uuid" },
+        },
+      },
+      CreateTicketMessageRequest: {
+        type: "object",
+        required: ["body"],
+        properties: {
+          body: { type: "string", example: "Can you check the tracking number?" },
+        },
+      },
+      UpdateTicketStatusRequest: {
+        type: "object",
+        required: ["status"],
+        properties: {
+          status: {
+            type: "string",
+            enum: ["OPEN", "IN_PROGRESS", "WAITING_CUSTOMER", "RESOLVED", "CLOSED"],
+          },
+          priority: {
+            type: "string",
+            enum: ["LOW", "MEDIUM", "HIGH"],
+            description: "Admin only",
+          },
+        },
+      },
       UploadImagesResponse: {
         type: "object",
         required: ["imageUrls"],
@@ -394,3 +553,68 @@ export const swaggerSpec = swaggerJsdoc({
   definition: swaggerDefinition,
   apis: ["./routes/*.ts"],
 });
+
+const HTTP_METHODS = new Set([
+  "get",
+  "post",
+  "put",
+  "patch",
+  "delete",
+  "options",
+  "head",
+  "trace",
+]);
+
+type Audience = "user" | "admin";
+
+type OperationObject = {
+  "x-audience"?: Audience[];
+  [key: string]: unknown;
+};
+
+function specFor(audience: Audience) {
+  const source = swaggerSpec as {
+    info?: { title?: string; description?: string };
+    paths?: Record<string, Record<string, OperationObject>>;
+  };
+  const paths: Record<string, Record<string, unknown>> = {};
+
+  for (const [path, pathItem] of Object.entries(source.paths ?? {})) {
+    const nextItem: Record<string, unknown> = {};
+
+    for (const [key, value] of Object.entries(pathItem)) {
+      if (!HTTP_METHODS.has(key)) {
+        nextItem[key] = value;
+        continue;
+      }
+
+      const audiences = value["x-audience"] ?? ["user"];
+      if (!audiences.includes(audience)) continue;
+
+      const { "x-audience": _audience, ...operation } = value;
+      nextItem[key] = operation;
+    }
+
+    const hasOperation = Object.keys(nextItem).some((key) => HTTP_METHODS.has(key));
+    if (hasOperation) paths[path] = nextItem;
+  }
+
+  const title = audience === "admin" ? "Open Fashion Admin API" : "Open Fashion User API";
+  const description =
+    audience === "admin"
+      ? "Admin endpoints. Authorize with an ADMIN bearer token."
+      : "Customer and public endpoints. Authorize with a customer bearer token where required.";
+
+  return {
+    ...source,
+    info: {
+      ...source.info,
+      title,
+      description,
+    },
+    paths,
+  };
+}
+
+export const userApiSpec = specFor("user");
+export const adminApiSpec = specFor("admin");

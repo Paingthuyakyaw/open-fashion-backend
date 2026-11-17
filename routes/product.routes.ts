@@ -17,6 +17,9 @@ const router = Router();
  *   get:
  *     tags:
  *       - Products
+ *     x-audience:
+ *       - user
+ *       - admin
  *     summary: List products with pagination and search (public)
  *     parameters:
  *       - in: query
@@ -61,6 +64,9 @@ router.get("/", listProducts);
  *   get:
  *     tags:
  *       - Products
+ *     x-audience:
+ *       - user
+ *       - admin
  *     summary: Get a product by ID (public)
  *     parameters:
  *       - in: path
@@ -90,6 +96,8 @@ router.get("/:id", getProduct);
  *   post:
  *     tags:
  *       - Products
+ *     x-audience:
+ *       - admin
  *     summary: Create a product (admin only)
  *     security:
  *       - bearerAuth: []
@@ -124,6 +132,8 @@ router.post("/", authenticate, authorize(Role.ADMIN), createProduct);
  *   put:
  *     tags:
  *       - Products
+ *     x-audience:
+ *       - admin
  *     summary: Update a product (admin only)
  *     security:
  *       - bearerAuth: []
@@ -167,6 +177,8 @@ router.put("/:id", authenticate, authorize(Role.ADMIN), updateProduct);
  *   delete:
  *     tags:
  *       - Products
+ *     x-audience:
+ *       - admin
  *     summary: Delete a product (admin only)
  *     security:
  *       - bearerAuth: []

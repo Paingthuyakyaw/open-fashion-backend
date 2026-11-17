@@ -2,6 +2,7 @@ import { Router } from "express";
 import { Role } from "../generated/prisma/client";
 import {
   createOrder,
+  deleteOrder,
   getOrder,
   listOrders,
   updateOrderStatus,
@@ -16,6 +17,9 @@ const router = Router();
  *   post:
  *     tags:
  *       - Orders
+ *     x-audience:
+ *       - user
+ *       - admin
  *     summary: Create a new order (authenticated)
  *     security:
  *       - bearerAuth: []
@@ -48,6 +52,9 @@ router.post("/", authenticate, createOrder);
  *   get:
  *     tags:
  *       - Orders
+ *     x-audience:
+ *       - user
+ *       - admin
  *     summary: List orders (customer sees own, admin sees all)
  *     security:
  *       - bearerAuth: []
@@ -74,6 +81,9 @@ router.get("/", authenticate, listOrders);
  *   get:
  *     tags:
  *       - Orders
+ *     x-audience:
+ *       - user
+ *       - admin
  *     summary: Get an order by ID (owner or admin)
  *     security:
  *       - bearerAuth: []
@@ -105,10 +115,53 @@ router.get("/:id", authenticate, getOrder);
 
 /**
  * @openapi
+ * /api/orders/{id}:
+ *   delete:
+ *     tags:
+ *       - Orders
+ *     x-audience:
+ *       - user
+ *       - admin
+ *     summary: Delete an order (owner for pending orders, admin for any)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Order deleted
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Order deleted successfully
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Order not found
+ *       409:
+ *         description: Only pending orders can be cancelled
+ */
+router.delete("/:id", authenticate, deleteOrder);
+
+/**
+ * @openapi
  * /api/orders/{id}/status:
  *   patch:
  *     tags:
  *       - Orders
+ *     x-audience:
+ *       - admin
  *     summary: Update order status (admin only)
  *     security:
  *       - bearerAuth: []

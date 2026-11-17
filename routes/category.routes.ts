@@ -17,6 +17,9 @@ const router = Router();
  *   get:
  *     tags:
  *       - Categories
+ *     x-audience:
+ *       - user
+ *       - admin
  *     summary: List all categories (public)
  *     responses:
  *       200:
@@ -39,6 +42,9 @@ router.get("/", listCategories);
  *   get:
  *     tags:
  *       - Categories
+ *     x-audience:
+ *       - user
+ *       - admin
  *     summary: Get a category by ID (public)
  *     parameters:
  *       - in: path
@@ -68,6 +74,8 @@ router.get("/:id", getCategory);
  *   post:
  *     tags:
  *       - Categories
+ *     x-audience:
+ *       - admin
  *     summary: Create a category (admin only)
  *     security:
  *       - bearerAuth: []
@@ -102,6 +110,8 @@ router.post("/", authenticate, authorize(Role.ADMIN), createCategory);
  *   put:
  *     tags:
  *       - Categories
+ *     x-audience:
+ *       - admin
  *     summary: Update a category (admin only)
  *     security:
  *       - bearerAuth: []
@@ -145,6 +155,8 @@ router.put("/:id", authenticate, authorize(Role.ADMIN), updateCategory);
  *   delete:
  *     tags:
  *       - Categories
+ *     x-audience:
+ *       - admin
  *     summary: Delete a category (admin only)
  *     security:
  *       - bearerAuth: []

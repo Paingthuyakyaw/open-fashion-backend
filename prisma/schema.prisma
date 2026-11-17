@@ -19,6 +19,9 @@ model User {
   password String
   role Role @default(CUSTOMER)
   orders Order[]
+  transactions Transaction[]
+  tickets Ticket[]
+  ticketMessages TicketMessage[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -78,6 +81,8 @@ model Order {
   user User @relation(fields: [userId], references: [id])
   status        OrderStatus @default(PENDING)  // enum သုံးပါ
   orderItems OrderItem[]
+  transactions Transaction[]
+  tickets Ticket[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -110,4 +115,83 @@ enum OrderStatus {
   SHIPPED
   DELIVERED
   CANCELLED
+}
+
+model Transaction {
+  id String @id @default(uuid())
+  orderId String
+  order Order @relation(fields: [orderId], references: [id])
+  userId String
+  user User @relation(fields: [userId], references: [id])
+  amount Float
+  currency String @default("USD")
+  status TransactionStatus @default(PENDING)
+  method PaymentMethod
+  reference String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum TransactionStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  CARD
+  CASH
+  BANK_TRANSFER
+  KBZ_PAY
+  WAVE_PAY
+  AYA_PAY
+  OTHER
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  WAITING_CUSTOMER
+  RESOLVED
+  CLOSED
+}
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum TicketCategory {
+  ORDER
+  PAYMENT
+  PRODUCT
+  SHIPPING
+  OTHER
+}
+
+model Ticket {
+  id         String         @id @default(uuid())
+  userId     String
+  user       User           @relation(fields: [userId], references: [id])
+  orderId    String?
+  order      Order?         @relation(fields: [orderId], references: [id])
+  subject    String
+  category   TicketCategory @default(OTHER)
+  priority   TicketPriority @default(MEDIUM)
+  status     TicketStatus   @default(OPEN)
+  messages   TicketMessage[]
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+}
+
+model TicketMessage {
+  id        String   @id @default(uuid())
+  ticketId  String
+  ticket    Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  body      String
+  createdAt DateTime @default(now())
 }

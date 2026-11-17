@@ -1,6 +1,15 @@
 import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
-import { OrderStatus, PrismaClient, Role } from "../generated/prisma/client";
+import {
+  OrderStatus,
+  PaymentMethod,
+  PrismaClient,
+  Role,
+  TicketCategory,
+  TicketPriority,
+  TicketStatus,
+  TransactionStatus,
+} from "../generated/prisma/client";
 import { hashPassword } from "../utils/password";
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
@@ -9,6 +18,9 @@ const prisma = new PrismaClient({ adapter });
 async function main() {
   console.log("Seeding database...");
 
+  await prisma.ticketMessage.deleteMany();
+  await prisma.ticket.deleteMany();
+  await prisma.transaction.deleteMany();
   await prisma.orderItem.deleteMany();
   await prisma.order.deleteMany();
   await prisma.productImage.deleteMany();
@@ -135,7 +147,7 @@ async function main() {
     },
   });
 
-  await prisma.order.create({
+  const paidOrder = await prisma.order.create({
     data: {
       userId: user.id,
       status: OrderStatus.PAID,
@@ -158,7 +170,7 @@ async function main() {
     },
   });
 
-  await prisma.order.create({
+  const pendingOrder = await prisma.order.create({
     data: {
       userId: user.id,
       status: OrderStatus.PENDING,
@@ -175,10 +187,100 @@ async function main() {
     },
   });
 
+  await prisma.transaction.createMany({
+    data: [
+      {
+        orderId: paidOrder.id,
+        userId: user.id,
+        amount: 139.97,
+        currency: "USD",
+        status: TransactionStatus.SUCCESS,
+        method: PaymentMethod.KBZ_PAY,
+        reference: "KBZ-100245",
+      },
+      {
+        orderId: pendingOrder.id,
+        userId: user.id,
+        amount: 59.99,
+        currency: "MMK",
+        status: TransactionStatus.PENDING,
+        method: PaymentMethod.WAVE_PAY,
+        reference: "WAVE-88421",
+      },
+    ],
+  });
+
+  await prisma.ticket.create({
+    data: {
+      userId: user.id,
+      orderId: paidOrder.id,
+      subject: "Paid order has not arrived",
+      category: TicketCategory.SHIPPING,
+      priority: TicketPriority.HIGH,
+      status: TicketStatus.IN_PROGRESS,
+      messages: {
+        create: [
+          {
+            userId: user.id,
+            body: "I paid for this order, but it still has not been delivered.",
+          },
+          {
+            userId: admin.id,
+            body: "We are checking the shipment and will update you today.",
+          },
+        ],
+      },
+    },
+  });
+
+  await prisma.ticket.create({
+    data: {
+      userId: user.id,
+      orderId: pendingOrder.id,
+      subject: "Wave Pay payment still pending",
+      category: TicketCategory.PAYMENT,
+      priority: TicketPriority.MEDIUM,
+      status: TicketStatus.OPEN,
+      messages: {
+        create: [
+          {
+            userId: user.id,
+            body: "I sent the Wave Pay payment, but the order is still pending.",
+          },
+        ],
+      },
+    },
+  });
+
+  await prisma.ticket.create({
+    data: {
+      userId: user.id,
+      subject: "Does the classic tee run small?",
+      category: TicketCategory.PRODUCT,
+      priority: TicketPriority.LOW,
+      status: TicketStatus.CLOSED,
+      messages: {
+        create: [
+          {
+            userId: user.id,
+            body: "Should I order a size up for the Classic Cotton Tee?",
+          },
+          {
+            userId: admin.id,
+            body: "It fits true to size. Closing this ticket.",
+          },
+        ],
+      },
+    },
+  });
+
   console.log("Seed completed.");
-  console.log(`  Categories: 3`);
-  console.log(`  Products: 4`);
+  console.log("  Categories: 3");
+  console.log("  Products: 4");
   console.log(`  Images: ${images.length}`);
+  console.log("  Orders: 2");
+  console.log("  Transactions: 2");
+  console.log("  Tickets: 3");
   console.log(`  Demo user: ${user.email} / password123`);
   console.log(`  Admin user: ${admin.email} / 123456`);
 }

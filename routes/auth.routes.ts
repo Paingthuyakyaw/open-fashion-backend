@@ -16,6 +16,8 @@ const router = Router();
  *   post:
  *     tags:
  *       - Auth
+ *     x-audience:
+ *       - user
  *     summary: Register a new customer account
  *     requestBody:
  *       required: true
@@ -43,6 +45,9 @@ router.post("/register", register);
  *   post:
  *     tags:
  *       - Auth
+ *     x-audience:
+ *       - user
+ *       - admin
  *     summary: Login with email and password
  *     requestBody:
  *       required: true
@@ -68,6 +73,9 @@ router.post("/login", login);
  *   get:
  *     tags:
  *       - Auth
+ *     x-audience:
+ *       - user
+ *       - admin
  *     summary: Get current authenticated user
  *     security:
  *       - bearerAuth: []
@@ -91,7 +99,9 @@ router.get("/me", authenticate, getMe);
  * /api/auth/admin/users:
  *   get:
  *     tags:
- *       - Admin
+ *       - Users
+ *     x-audience:
+ *       - admin
  *     summary: List all users (admin only)
  *     security:
  *       - bearerAuth: []
